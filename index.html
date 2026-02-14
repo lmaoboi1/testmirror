@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Magic Mirror - Valentine's Special</title>
+    <!-- Tailwind CSS for layout utility -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary-pink: #ff8fa3;
+            --deep-red: #c9184a;
+            --mirror-border: #f3cfc6;
+        }
+
+        /* STRICT NO-SCROLL LAYOUT */
+        html, body {
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            width: 100vw;
+            overflow: hidden; /* Prevent scrolling completely */
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none; /* Prevent bounce effect on iOS */
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            /* Animated Gradient Background */
+            background: linear-gradient(300deg, #ffe6ea, #ffc2cd, #ffdeebd8, #fff0f3);
+            background-size: 240% 240%;
+            animation: gradientMove 12s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating Hearts Background */
+        .bg-hearts {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .heart-bg {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.5);
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5) rotate(0deg); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: translateY(-10vh) scale(1.2) rotate(45deg); opacity: 0; }
+        }
+
+        /* Flex Container to fit screen exactly */
+        .app-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly; /* Distribute space evenly */
+            align-items: center;
+            padding: 20px; /* Safe area padding */
+            padding-bottom: max(20px, env(safe-area-inset-bottom)); /* iOS safe area */
+        }
+
+        /* 1. PERCENTAGE COUNTER (Enhanced) */
+        .counter-box {
+            font-family: 'Pacifico', cursive;
+            font-size: 3.5rem; /* Large text */
+            line-height: 1;
+            background: linear-gradient(to bottom, #d90429, #ff4d6d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 4px 0px rgba(255, 255, 255, 0.8));
+            text-align: center;
+            z-index: 20;
+            flex-shrink: 0; /* Prevent shrinking */
+            height: 4rem; /* Fixed height reservation */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from { filter: drop-shadow(0px 4px 0px rgba(255, 255, 255, 0.8)); transform: scale(1); }
+            to { filter: drop-shadow(0px 0px 15px rgba(255, 77, 109, 0.4)); transform: scale(1.02); }
+        }
+
+        /* 2. THE MIRROR (Responsive & Constrained) */
+        .mirror-container {
+            position: relative;
+            width: auto; /* Let height dictate width */
+            /* Flexible height: takes available space but capped at 60% of view */
+            height: 55%; 
+            aspect-ratio: 3/4; /* Maintain mirror shape */
+            
+            background: linear-gradient(135deg, #fcece8 0%, #dfa598 50%, #c48b7d 100%);
+            border-radius: 40px; /* Rounded corners */
+            padding: 10px; /* Frame thickness */
+            box-shadow: 
+                0 15px 35px rgba(164, 19, 60, 0.3),
+                inset 0 0 15px rgba(255, 255, 255, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 1; /* Allow shrinking on small screens */
+        }
+
+        .mirror-glass {
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a; /* Dark when off */
+            border-radius: 32px;
+            position: relative;
+            overflow: hidden; /* CRITICAL: Crops video */
+            border: 2px solid rgba(107, 62, 62, 0.3);
+            mask-image: -webkit-radial-gradient(white, black); /* Safari fix for rounded corners on video */
+            -webkit-mask-image: -webkit-radial-gradient(white, black);
+        }
+
+        /* Glass Shine Effect */
+        .glass-shine {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                120deg,
+                rgba(255,255,255,0) 30%,
+                rgba(255,255,255,0.15) 38%,
+                rgba(255,255,255,0.15) 40%,
+                rgba(255,255,255,0) 48%
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* VIDEO FIXES */
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Fills the rectangle without distortion */
+            transform: scaleX(-1); /* Mirror flip */
+            display: none;
+        }
+        
+        video.active, canvas.active {
+            display: block;
+        }
+
+        /* Face Guide Overlay */
+        .face-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%;
+            height: 70%;
+            border: 2px dashed rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.4); /* Darkens outside */
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .face-overlay.visible { opacity: 1; }
+
+        /* 3. BUTTONS & TEXT */
+        .controls-area {
+            flex-shrink: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .action-btn {
+            background: linear-gradient(90deg, #ff758c, #ff7eb3);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 93, 143, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            width: 80%; /* Consistent width */
+            max-width: 280px;
+            justify-content: center;
+        }
+
+        .action-btn:active { transform: scale(0.96); }
+
+        .action-btn.start-mode {
+            background: linear-gradient(90deg, #d90429, #ef233c);
+            animation: pulseBtn 1.5s infinite;
+        }
+
+        @keyframes pulseBtn {
+            0% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(217, 4, 41, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0); }
+        }
+
+        .subtitle {
+            color: var(--deep-red);
+            font-weight: 700;
+            font-size: 1rem;
+            text-align: center;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+        }
+
+        /* Success Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            text-align: center;
+            width: 85%;
+            max-width: 320px;
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid #ffb3c1;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+
+        .rose-emoji {
+            font-size: 5rem;
+            margin: 10px 0;
+            display: block;
+            animation: floatEmoji 3s ease-in-out infinite;
+        }
+        @keyframes floatEmoji { 0%,100% {transform:translateY(0);} 50% {transform:translateY(-10px);} }
+
+        /* Confetti Canvas */
+        #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+        /* Icon Spin */
+        .spin-icon { animation: spin 8s linear infinite; opacity: 0.5; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-hearts" id="bgHearts"></div>
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="app-container">
+        
+        <!-- 1. Percentage Header -->
+        <div class="counter-box">
+            <span id="percentageText">0%</span>
+        </div>
+
+        <!-- 2. The Mirror -->
+        <div class="mirror-container">
+            <div class="mirror-glass">
+                <div class="glass-shine"></div>
+                
+                <!-- Video/Canvas Elements -->
+                <video id="videoElement" playsinline webkit-playsinline autoplay muted></video>
+                <canvas id="canvasElement"></canvas>
+                
+                <!-- Overlays -->
+                <div class="face-overlay" id="faceOverlay"></div>
+                
+                <!-- Idle State Placeholder -->
+                <div id="mirrorPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-white/40">
+                    <i data-lucide="sparkles" size="48" class="spin-icon mb-2"></i>
+                    <p class="font-bold text-xs uppercase tracking-widest">Mirror Idle</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Controls -->
+        <div class="controls-area">
+            <button id="mainBtn" class="action-btn">
+                <i data-lucide="camera" class="w-6 h-6"></i>
+                <span id="btnText">Tap Camera</span>
+            </button>
+            <p class="subtitle">Only the prettiest can get the rose</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <h2 class="text-3xl text-pink-600" style="font-family: 'Pacifico', cursive;">You Deserve It!</h2>
+            <div class="rose-emoji">🌹</div>
+            <p class="text-gray-500 mb-4 font-semibold">Matched 100% perfectly.</p>
+            <button class="bg-[#c9184a] text-white px-8 py-3 rounded-full font-bold hover:bg-[#a01230] transition w-full" onclick="location.reload()">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Setup Background Hearts ---
+        function createHearts() {
+            const container = document.getElementById('bgHearts');
+            const heartCount = 12; 
+            for (let i = 0; i < heartCount; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart-bg');
+                heart.innerHTML = '❤';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                heart.style.animationDuration = (Math.random() * 10 + 5) + 's';
+                heart.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(heart);
+            }
+        }
+        createHearts();
+        lucide.createIcons();
+
+        // --- Core Logic ---
+        const video = document.getElementById('videoElement');
+        const canvas = document.getElementById('canvasElement');
+        const mainBtn = document.getElementById('mainBtn');
+        const btnText = document.getElementById('btnText');
+        const percentageText = document.getElementById('percentageText');
+        const faceOverlay = document.getElementById('faceOverlay');
+        const modal = document.getElementById('successModal');
+        const placeholder = document.getElementById('mirrorPlaceholder');
+        let stream = null;
+
+        const STATE = { IDLE: 'idle', WAITING: 'waiting', READY: 'ready', SCANNING: 'scanning' };
+        let currentState = STATE.IDLE;
+
+        mainBtn.addEventListener('click', handleButtonClick);
+
+        async function handleButtonClick() {
+            if (currentState === STATE.IDLE) {
+                try {
+                    // Force mobile constraint to help fit mirror aspect ratio
+                    const constraints = { 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 720 },
+                            height: { ideal: 960 } // 3:4 aspect ratio ideally
+                        } 
+                    };
+                    
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = stream;
+                    
+                    // Only show video once data is loaded to prevent flickering
+                    video.onloadedmetadata = () => {
+                        video.classList.add('active');
+                        placeholder.style.display = 'none';
+                        faceOverlay.classList.add('visible');
+                        startCountdown();
+                    };
+                } catch (err) {
+                    alert("Unable to access camera. Please check permissions.");
+                }
+            } else if (currentState === STATE.READY) {
+                takeSnapshot();
+                runScanningAnimation();
+            }
+        }
+
+        function startCountdown() {
+            currentState = STATE.WAITING;
+            mainBtn.disabled = true;
+            let seconds = 5;
+            
+            btnText.innerText = `Pose... ${seconds}`;
+            
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    btnText.innerText = `Pose... ${seconds}`;
+                } else {
+                    clearInterval(interval);
+                    activateStartButton();
+                }
+            }, 1000);
+        }
+
+        function activateStartButton() {
+            currentState = STATE.READY;
+            mainBtn.disabled = false;
+            mainBtn.classList.add('start-mode');
+            btnText.innerText = "START MAGIC";
+            // Update icon
+            mainBtn.querySelector('svg').remove(); // remove camera icon
+            const starIcon = document.createElement('i');
+            starIcon.setAttribute('data-lucide', 'sparkles');
+            mainBtn.prepend(starIcon);
+            lucide.createIcons();
+        }
+
+        function takeSnapshot() {
+            // Draw video to canvas (freeze frame)
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Mirror flip the canvas draw context
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            video.classList.remove('active');
+            canvas.classList.add('active');
+            faceOverlay.classList.remove('visible');
+            
+            // Stop camera
+            if (stream) stream.getTracks().forEach(t => t.stop());
+        }
+
+        function runScanningAnimation() {
+            currentState = STATE.SCANNING;
+            mainBtn.style.opacity = '0'; // Fade out button
+            mainBtn.style.pointerEvents = 'none';
+            
+            let percent = 0;
+            const duration = 3500;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease out cubic
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                percent = Math.floor(ease * 100);
+                percentageText.innerText = percent + "%";
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    percentageText.innerText = "100%";
+                    setTimeout(finishExperience, 300);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function finishExperience() {
+            fireConfetti();
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 600);
+        }
+
+        // --- Confetti ---
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function fireConfetti() {
+            const colors = ['#ff8fa3', '#d90429', '#ffccd5', '#fff0f3'];
+            for (let i = 0; i < 200; i++) {
+                particles.push({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: (Math.random() - 0.5) * 20 - 5,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3; // Gravity
+                p.vx *= 0.95; // Drag
+                p.vy *= 0.95;
+                p.alpha -= 0.008;
+                p.rotation += p.rotationSpeed;
+                
+                if (p.alpha <= 0) particles.splice(i, 1);
+                else {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                }
+            });
+            if (particles.length > 0) requestAnimationFrame(animateConfetti);
+        }
+    </script>
+</body>
+</html>
